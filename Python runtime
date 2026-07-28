@@ -41,14 +41,13 @@ RUN sed -i '/<policy domain="path" rights="none" pattern="@\*"/d' /etc/ImageMagi
                 sed -i 's/mirrors.aliyun.com\/debian-security/mirrors.tuna.tsinghua.edu.cn\/debian-security/g' /etc/apt/sources.list && \
                 ( \
 
-                imagemagick \
-                ffmpeg && break || \
-            echo "Attempt $i failed, retrying..."; \
-            if [ $i -eq 3 ]; then \
-                echo "Aliyun mirror failed, switching to Tsinghua mirror"; \
-                sed -i 's/mirrors.aliyun.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list && \
-                sed -i 's/mirrors.aliyun.com\/debian-security/mirrors.tuna.tsinghua.edu.cn\/debian-security/g' /etc/apt/sources.list && \
-                ( \
+               
+# 2. Run the Docker container using the following command
+## For Linux or MacOS:
+# docker run -v $(pwd)/config.toml:/MoneyPrinterTurbo/config.toml -v $(pwd)/storage:/MoneyPrinterTurbo/storage -p 8501:8501 moneyprinterturbo
+## For Windows:
+# docker run -v ${PWD}/config.toml:/MoneyPrinterTurbo/config.toml -v ${PWD}/storage:/MoneyPrinterTurbo/storage -p 8501:8501 moneyprinterturbo
+
 
 # Now copy the rest of the codebase into the image
 COPY . .
@@ -61,9 +60,3 @@ CMD ["streamlit", "run", "./webui/Main.py","--browser.serverAddress=127.0.0.1","
 
 # 1. Build the Docker image using the following command
 # docker build -t moneyprinterturbo .
-
-# 2. Run the Docker container using the following command
-## For Linux or MacOS:
-# docker run -v $(pwd)/config.toml:/MoneyPrinterTurbo/config.toml -v $(pwd)/storage:/MoneyPrinterTurbo/storage -p 8501:8501 moneyprinterturbo
-## For Windows:
-# docker run -v ${PWD}/config.toml:/MoneyPrinterTurbo/config.toml -v ${PWD}/storage:/MoneyPrinterTurbo/storage -p 8501:8501 moneyprinterturbo

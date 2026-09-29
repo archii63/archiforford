@@ -1,0 +1,104 @@
+"""
+Veltrix
+-------
+A lightweight configuration validator for Python applications.
+
+Features:
+- Environment variable loading
+- Required field validation
+- Type conversion
+- Clean error reporting
+- Zero external dependencies
+"""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from typing import Any, Callable
+
+
+class ConfigurationError(Exception):
+    """Raised when application configuration is invalid."""
+
+
+@dataclass(frozen=True)
+class Field:
+    """Defines a configuration field."""
+
+    name: str
+    required: bool = True
+    cast: Callable[[str], Any] = str
+    default: Any = None
+
+
+class Config:
+    """Load and validate application configuration."""
+
+    def __init__(self, fields: list[Field]) -> None:
+        self._fields = fields
+        self._values: dict[str, Any] = {}
+
+    def load(self) -> "Config":
+        """Load values from environment variables."""
+        errors: list[str] = []
+
+        for field in self._fields:
+            raw_value = os.getenv(field.name)
+
+            if raw_value is None or raw_value == "":
+                if field.required and field.default is None:
+                    errors.append(
+                        f"Missing required configuration: {field.name}"
+                    )
+                    continue
+
+                self._values[field.name] = field.default
+                continue
+
+            try:
+                self._values[field.name] = field.cast(raw_value)
+            except (TypeError, ValueError) as exc:
+                errors.append(
+                    f"Invalid value for {field.name}: {exc}"
+                )
+
+        if errors:
+            raise ConfigurationError(
+                "Configuration validation failed:\n- "
+                + "\n- ".join(errors)
+            )
+
+        return self
+
+    def get(self, name: str) -> Any:
+        """Return a configuration value."""
+        if name not in self._values:
+            raise KeyError(f"Unknown configuration field: {name}")
+
+        return self._values[name]
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return a copy of the loaded configuration."""
+        return dict(self._values)
+
+
+# Example usage
+if __name__ == "__main__":
+    configuration = (
+        Config(
+            [
+                Field("APP_NAME"),
+                Field("DEBUG", cast=lambda value: value.lower() == "true"),
+                Field("PORT", cast=int, default=8000),
+                Field("TIMEOUT", cast=float, default=30.0),
+            ]
+        )
+        .load()
+    )
+
+    print("Configuration loaded successfully.")
+    print(f"Application: {configuration.get('APP_NAME')}")
+    print(f"Port: {configuration.get('PORT')}")
+    print(f"Debug: {configuration.get('DEBUG')}")
+    print(f"Timeout: {configuration.get('TIMEOUT')}s")
